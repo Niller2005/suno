@@ -140,3 +140,111 @@ Rules:
 - **Filenames**: kebab-case, derived from song title (e.g., `dubi-dubi-doo.md`)
 - **Format**: Markdown with VitePress frontmatter, Details table, Style Prompt code block, Lyrics code block, Generation Tips list
 - **Downloads**: Track audio files go in `downloads/` and `docs/public/audio/` (for VitePress)
+
+## Generating Songs with generate.py
+
+The `generate.py` script reads song markdown files and submits them to the Suno API. It handles parsing, API submission, polling, downloading, and updating the markdown with generation links.
+
+### Prerequisites
+
+- Python 3.10+
+- `requests` library (`pip install requests`)
+- `python-dotenv` optional (`pip install python-dotenv`)
+- A `.env` file in the project root with:
+
+```
+SUNO_AUTH_TOKEN=<JWT from browser DevTools>
+SUNO_DEVICE_ID=<device ID from browser DevTools>
+SUNO_MODEL=chirp-crow
+SUNO_API_URL=https://studio-api.prod.suno.com
+```
+
+To get the token: open Suno in browser, DevTools > Network > any API request > copy `Authorization: Bearer <token>`. Tokens expire -- the script warns when <5 minutes remain and errors on expired tokens.
+
+### Commands
+
+```bash
+# Dry run -- show what would be sent without calling the API
+python generate.py docs/songs/my-song.md --dry-run
+
+# Generate -- submit to Suno, poll for completion, download mp3s
+python generate.py docs/songs/my-song.md
+
+# Generate without polling (fire and forget)
+python generate.py docs/songs/my-song.md --no-poll
+
+# Generate without downloading mp3s
+python generate.py docs/songs/my-song.md --no-download
+
+# Custom poll timeout (default 600s)
+python generate.py docs/songs/my-song.md --poll-timeout 300
+```
+
+### What It Does
+
+1. **Parses** the song markdown: extracts title, style prompt (tags), negative tags (from "no ..." patterns), lyrics, and BPM
+2. **Validates** the auth token (JWT expiry check)
+3. **Submits** to `POST /api/generate/v2-web/` with generation_type `TEXT`
+4. **Polls** the feed endpoint every 10s until all clips are `complete` or `error` (default 600s timeout)
+5. **Downloads** completed mp3s to `downloads/` as `{song-slug}-clip{N}-{id[:8]}.mp3`
+6. **Updates** the song markdown with a `## Generations` section containing timestamped links to Suno and local files
+
+### Generation Workflow
+
+When asked to generate a song:
+
+1. **Always dry-run first** -- run with `--dry-run` and review the output
+2. Confirm the title, tags, lyrics length, and negative tags look correct
+3. Run without `--dry-run` to submit to Suno
+4. The script automatically polls, downloads, and updates the markdown
+5. Review the `## Generations` section appended to the song file
+6. Listen to the downloaded clips and pick the best one
+
+### Post-Generation: VitePress Integration
+
+After a successful generation, complete these steps to make the song playable on the site:
+
+1. **Copy MP3s to public audio directory**:
+   - Copy from `downloads/{song}-clip{N}-{id}.mp3` to `docs/public/audio/{song}-clip{N}.mp3` (clean names, no ID suffix)
+   - Example: `cp downloads/my-song-clip1-a1b2c3d4.mp3 docs/public/audio/my-song-clip1.mp3`
+
+2. **Add audio player section to the song markdown** (after the Details table, before Style Prompt):
+   ```markdown
+   <script setup>
+   import { withBase } from 'vitepress'
+   </script>
+
+   ## Listen
+
+   ### Clip 1
+
+   <audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+     <source :src="withBase('/audio/{song}-clip1.mp3')" type="audio/mpeg">
+     Your browser does not support the audio element.
+   </audio>
+
+   [View on Suno](https://suno.com/song/{clip-id})
+   ```
+   Repeat the `### Clip N` block for each clip.
+
+3. **Add to song catalog index** (`docs/songs/index.md`):
+   - Insert a row in the table in alphabetical order
+   - Format: `| [Song Title](./song-slug) | Genre | BPM | Mood |`
+
+4. **Add to sidebar** (`docs/.vitepress/config.mts`):
+   - Insert entry in the `/songs/` sidebar items array in alphabetical order
+   - Format: `{ text: "Song Title", link: "/songs/song-slug" }`
+
+### Output Structure
+
+After generation, the song file gets a `## Generations` section:
+
+```markdown
+## Generations
+
+- **2026-02-14 15:30** (gen `a1b2c3d4`):
+  - [Clip 1](https://suno.com/song/clip-id-1) | [my-song-clip1-a1b2c3d4.mp3](../../downloads/my-song-clip1-a1b2c3d4.mp3)
+  - [Clip 2](https://suno.com/song/clip-id-2) | [my-song-clip2-a1b2c3d4.mp3](../../downloads/my-song-clip2-a1b2c3d4.mp3)
+```
+
+Downloaded mp3s are saved to `downloads/` at the project root.
