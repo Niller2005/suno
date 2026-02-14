@@ -116,10 +116,50 @@ def generate_browser_token() -> str:
     return json.dumps({"token": encoded})
 
 
-def append_generation_links(filepath: str, generation_id: str, clips: list[dict]):
-    """Append generation links to the song markdown file under ## Generations."""
+def download_clip(clip_id: str, song_slug: str, clip_num: int) -> str | None:
+    """Download an mp3 from the Suno CDN. Returns the local file path or None."""
+    cdn_url = f"https://cdn1.suno.ai/{clip_id}.mp3"
+    downloads_dir = Path(__file__).parent / "downloads"
+    downloads_dir.mkdir(exist_ok=True)
+
+    filename = f"{song_slug}-clip{clip_num}-{clip_id[:8]}.mp3"
+    filepath = downloads_dir / filename
+
+    print(f"  Downloading clip {clip_num}: {cdn_url}")
+    try:
+        resp = requests.get(cdn_url, timeout=120, stream=True)
+        if resp.status_code == 200:
+            with open(filepath, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            size_mb = filepath.stat().st_size / (1024 * 1024)
+            print(f"    Saved: {filepath} ({size_mb:.1f} MB)")
+            return str(filepath)
+        else:
+            print(f"    Download failed: HTTP {resp.status_code}")
+            return None
+    except Exception as e:
+        print(f"    Download error: {e}")
+        return None
+
+
+def append_generation_links(
+    filepath: str,
+    generation_id: str,
+    clips: list[dict],
+    downloaded: dict[str, str] | None = None,
+):
+    """Append generation links to the song markdown file under ## Generations.
+
+    Args:
+        filepath: Path to the song markdown file.
+        generation_id: The generation UUID.
+        clips: List of clip dicts from the API response.
+        downloaded: Optional mapping of clip_id -> local file path.
+    """
     content = Path(filepath).read_text(encoding="utf-8")
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    downloaded = downloaded or {}
 
     # Build the new entry
     lines = []
@@ -127,7 +167,14 @@ def append_generation_links(filepath: str, generation_id: str, clips: list[dict]
     for i, clip in enumerate(clips):
         clip_id = clip.get("id", "unknown")
         url = f"https://suno.com/song/{clip_id}"
-        lines.append(f"  - [Clip {i + 1}]({url})")
+        local = downloaded.get(clip_id)
+        if local:
+            rel_path = os.path.relpath(local, Path(filepath).parent)
+            lines.append(
+                f"  - [Clip {i + 1}]({url}) | [{Path(local).name}]({rel_path})"
+            )
+        else:
+            lines.append(f"  - [Clip {i + 1}]({url})")
     entry = "\n".join(lines)
 
     # Check if ## Generations section already exists
@@ -144,7 +191,9 @@ def append_generation_links(filepath: str, generation_id: str, clips: list[dict]
     print(f"\nUpdated {filepath} with generation links")
     for i, clip in enumerate(clips):
         clip_id = clip.get("id", "unknown")
-        print(f"  Clip {i + 1}: https://suno.com/song/{clip_id}")
+        local = downloaded.get(clip_id)
+        extra = f" -> {local}" if local else ""
+        print(f"  Clip {i + 1}: https://suno.com/song/{clip_id}{extra}")
 
 
 def submit_to_suno(song: dict, dry_run: bool = False) -> dict:
@@ -294,6 +343,11 @@ def main():
         "--no-poll", action="store_true", help="Don't poll for completion"
     )
     parser.add_argument(
+        "--no-download",
+        action="store_true",
+        help="Don't download mp3s after completion",
+    )
+    parser.add_argument(
         "--poll-timeout",
         type=int,
         default=600,
@@ -318,12 +372,29 @@ def main():
 
     if not args.dry_run and "id" in result:
         clips = result.get("clips", [])
-        if clips:
-            append_generation_links(args.song_file, result["id"], clips)
-
         clip_ids = [c["id"] for c in clips]
+        downloaded: dict[str, str] = {}
+
+        # Poll for completion
+        completed_clips = None
         if clip_ids and not args.no_poll:
-            poll_status(result["id"], clip_ids, timeout=args.poll_timeout)
+            completed_clips = poll_status(
+                result["id"], clip_ids, timeout=args.poll_timeout
+            )
+
+        # Download mp3s if polling succeeded
+        if completed_clips and not args.no_download:
+            song_slug = Path(args.song_file).stem
+            print(f"\nDownloading completed clips...")
+            for i, clip in enumerate(completed_clips):
+                if clip.get("status") == "complete":
+                    local_path = download_clip(clip["id"], song_slug, i + 1)
+                    if local_path:
+                        downloaded[clip["id"]] = local_path
+
+        # Update markdown with links (and download paths if available)
+        if clips:
+            append_generation_links(args.song_file, result["id"], clips, downloaded)
 
 
 if __name__ == "__main__":
