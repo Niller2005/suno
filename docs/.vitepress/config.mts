@@ -1,9 +1,16 @@
 import { defineConfig } from "vitepress";
+import { tabsMarkdownPlugin } from "vitepress-plugin-tabs";
 
 export default defineConfig({
   title: "Suno Music Lab",
   description: "AI-powered music creation with Suno",
   base: "/suno/",
+
+  markdown: {
+    config(md) {
+      md.use(tabsMarkdownPlugin);
+    },
+  },
 
   head: [
     ["meta", { name: "theme-color", content: "#7c3aed" }],

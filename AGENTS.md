@@ -210,12 +210,19 @@ After a successful generation, complete these steps to make the song playable on
    - Example: `cp downloads/my-song-clip1-a1b2c3d4.mp3 docs/public/audio/my-song-772c971f-clip1.mp3`
 
 2. **Add audio player section to the song markdown** (after the Details table, before Style Prompt):
+   - Use `vitepress-plugin-tabs` (`:::tabs` / `== Tab Name` syntax) to organize versions
+   - Each version gets its own tab: `== V1 — Genre Description`
+   - When regenerating a song with a new style, add a new tab rather than overwriting the previous one
+   - The first generation is always the first tab; subsequent regenerations are added as new tabs
    ```markdown
    <script setup>
    import { withBase } from 'vitepress'
    </script>
 
    ## Listen
+
+   :::tabs
+   == V1 — Genre Description
 
    ### Clip 1
 
@@ -225,8 +232,9 @@ After a successful generation, complete these steps to make the song playable on
    </audio>
 
    [View on Suno](https://suno.com/song/{clip-id})
+   :::
    ```
-   Repeat the `### Clip N` block for each clip.
+   Repeat the `### Clip N` block for each clip within a tab. Add new `== VN — Genre` tabs for regenerations.
 
 3. **Add to song catalog index** (`docs/songs/index.md`):
    - Insert a row in the table in alphabetical order
