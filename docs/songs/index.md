@@ -4,6 +4,7 @@ All songs created with Suno AI, organized with full details, style prompts, and 
 
 | Song | Genre | BPM | Mood |
 |------|-------|-----|------|
+| [Beacon Baron](./beacon-baron) | Trap / Grime | 140 | Aggressive, braggadocious, chaotic |
 | [Beyond the Silence of the Stars](./beyond-the-silence-of-the-stars) | Euphoric Hardstyle | 150 | Epic, dramatic, triumphant |
 | [Drifting Past the Edge of Light](./drifting-past-the-edge-of-light) | Liquid Drum and Bass | 174 | Smooth, dreamy, uplifting |
 | [Dubi Dubi Doo](./dubi-dubi-doo) | Speed Garage | 136 | Cheeky, chaotic, high energy |

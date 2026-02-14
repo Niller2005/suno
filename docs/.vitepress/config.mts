@@ -38,6 +38,7 @@ export default defineConfig({
           text: "Song Catalog",
           items: [
             { text: "All Songs", link: "/songs/" },
+            { text: "Beacon Baron", link: "/songs/beacon-baron" },
             {
               text: "Beyond the Silence of the Stars",
               link: "/songs/beyond-the-silence-of-the-stars",
