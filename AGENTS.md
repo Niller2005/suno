@@ -178,6 +178,12 @@ python generate.py docs/songs/my-song.md --no-download
 
 # Custom poll timeout (default 600s)
 python generate.py docs/songs/my-song.md --poll-timeout 300
+
+# Check status of the most recent generation (and download if complete)
+python generate.py docs/songs/my-song.md --status
+
+# Check status without downloading
+python generate.py docs/songs/my-song.md --status --no-download
 ```
 
 ### What It Does

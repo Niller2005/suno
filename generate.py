@@ -329,6 +329,158 @@ def poll_status(generation_id: str, clip_ids: list[str], timeout: int = 600):
     return None
 
 
+def parse_generation_clip_ids(filepath: str, gen_index: int = 0) -> list[str]:
+    """Extract clip IDs from the ## Generations section of a song markdown.
+
+    Args:
+        filepath: Path to the song markdown file.
+        gen_index: Which generation to extract (0 = most recent, 1 = second most recent, etc.)
+
+    Returns:
+        List of clip UUIDs found in the specified generation entry.
+    """
+    content = Path(filepath).read_text(encoding="utf-8")
+
+    # Find ## Generations section
+    gen_section = re.search(r"## Generations\s*\n(.*)", content, re.DOTALL)
+    if not gen_section:
+        return []
+
+    section_text = gen_section.group(1)
+
+    # Each generation entry starts with "- **timestamp** (gen `id`):"
+    # Collect all entries (split by top-level "- **")
+    entries = re.split(r"(?=^- \*\*)", section_text.strip(), flags=re.MULTILINE)
+    entries = [e.strip() for e in entries if e.strip()]
+
+    if gen_index >= len(entries):
+        return []
+
+    entry = entries[gen_index]
+
+    # Extract clip IDs from suno.com/song/{uuid} links
+    clip_ids = re.findall(r"suno\.com/song/([0-9a-f-]{36})", entry)
+    return clip_ids
+
+
+def check_status(filepath: str, no_download: bool = False, timeout: int = 60):
+    """Check the status of the most recent generation from a song file.
+
+    Parses clip IDs from the ## Generations section, queries the feed endpoint,
+    and optionally downloads completed clips that haven't been downloaded yet.
+    """
+    clip_ids = parse_generation_clip_ids(filepath)
+    if not clip_ids:
+        print("ERROR: No clip IDs found in ## Generations section")
+        print("  Has this song been generated yet?")
+        sys.exit(1)
+
+    print(f"Checking status for {len(clip_ids)} clip(s):")
+    for cid in clip_ids:
+        print(f"  {cid}")
+
+    auth_token = os.environ.get("SUNO_AUTH_TOKEN", "")
+    api_url = os.environ.get("SUNO_API_URL", "https://studio-api.prod.suno.com")
+    device_id = os.environ.get("SUNO_DEVICE_ID", "")
+
+    if not auth_token:
+        print("ERROR: SUNO_AUTH_TOKEN not set in .env")
+        sys.exit(1)
+
+    token_info = check_token_expiry(auth_token)
+    if token_info["expired"]:
+        print("Cannot proceed with expired token.")
+        sys.exit(1)
+
+    headers = {
+        "Authorization": f"Bearer {auth_token}",
+        "Device-Id": device_id,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0",
+        "Referer": "https://suno.com/",
+        "Origin": "https://suno.com",
+        "Accept": "*/*",
+    }
+
+    ids_param = ",".join(clip_ids)
+    poll_url = f"{api_url}/api/feed/?ids={ids_param}"
+
+    try:
+        resp = requests.get(poll_url, headers=headers, timeout=timeout)
+    except Exception as e:
+        print(f"ERROR: Request failed: {e}")
+        sys.exit(1)
+
+    if resp.status_code != 200:
+        print(f"ERROR: API returned {resp.status_code}")
+        print(f"Response: {resp.text[:500]}")
+        sys.exit(1)
+
+    clips = resp.json()
+    if not isinstance(clips, list):
+        print(f"ERROR: Unexpected response format: {type(clips)}")
+        sys.exit(1)
+
+    print(f"\nStatus:")
+    all_complete = True
+    for clip in clips:
+        status = clip.get("status", "unknown")
+        clip_id = clip.get("id", "unknown")
+        title = clip.get("title", "")
+        duration = clip.get("metadata", {}).get("duration", "?")
+        audio_url = clip.get("audio_url", "")
+
+        status_icon = {
+            "complete": "[OK]",
+            "submitted": "[..]",
+            "streaming": "[>>]",
+            "error": "[!!]",
+        }.get(status, "[??]")
+
+        print(f"  {status_icon} {clip_id[:8]}... — {status}")
+        if status == "complete":
+            print(f"       Duration: {duration}s")
+            if audio_url:
+                print(f"       Audio: {audio_url[:80]}...")
+        elif status == "error":
+            err_msg = clip.get("metadata", {}).get("error_message", "unknown error")
+            print(f"       Error: {err_msg}")
+            all_complete = False
+        else:
+            all_complete = False
+
+    # Download completed clips if not already downloaded
+    if all_complete and not no_download:
+        content = Path(filepath).read_text(encoding="utf-8")
+        song_slug = Path(filepath).stem
+        downloaded: dict[str, str] = {}
+        needs_download = False
+
+        for i, clip in enumerate(clips):
+            clip_id = clip.get("id", "")
+            # Check if already downloaded (has a .mp3 link in the markdown)
+            if clip_id and f"{clip_id[:8]}.mp3" not in content:
+                needs_download = True
+                local_path = download_clip(clip_id, song_slug, i + 1)
+                if local_path:
+                    downloaded[clip_id] = local_path
+
+        if downloaded:
+            # Re-read content to update the clip lines with download paths
+            content = Path(filepath).read_text(encoding="utf-8")
+            for clip_id, local_path in downloaded.items():
+                rel_path = os.path.relpath(local_path, Path(filepath).parent)
+                # Find the line with this clip's suno link and append download link
+                old_pattern = f"(https://suno.com/song/{clip_id})"
+                new_pattern = f"(https://suno.com/song/{clip_id}) | [{Path(local_path).name}]({rel_path})"
+                content = content.replace(old_pattern, new_pattern)
+            Path(filepath).write_text(content, encoding="utf-8")
+            print(f"\nUpdated {filepath} with download links")
+        elif not needs_download:
+            print(f"\nAll clips already downloaded.")
+    elif not all_complete:
+        print(f"\nNot all clips are complete yet. Run --status again later.")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generate Suno tracks from song markdown files"
@@ -338,6 +490,11 @@ def main():
         "--dry-run",
         action="store_true",
         help="Show what would be sent without calling API",
+    )
+    parser.add_argument(
+        "--status",
+        action="store_true",
+        help="Check status of the most recent generation (no new submission)",
     )
     parser.add_argument(
         "--no-poll", action="store_true", help="Don't poll for completion"
@@ -360,6 +517,11 @@ def main():
         sys.exit(1)
 
     load_env()
+
+    # Status check mode -- query existing generation, don't submit new one
+    if args.status:
+        check_status(args.song_file, no_download=args.no_download)
+        return
 
     print(f"Parsing: {args.song_file}")
     song = parse_song_md(args.song_file)
