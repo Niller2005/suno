@@ -45,6 +45,26 @@ import { withBase } from 'vitepress'
 </audio>
 
 [View on Suno](https://suno.com/song/0f5f872e-a3d8-4e20-9be7-0db9d5fa41c7)
+
+== V2 — Electro Swing DnB
+
+### Clip 1
+
+<audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+  <source :src="withBase('/audio/beacon-baron-750da1df-clip1.mp3')" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+[View on Suno](https://suno.com/song/4d6ca078-f028-401c-8b5d-7d78856947bd)
+
+### Clip 2
+
+<audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+  <source :src="withBase('/audio/beacon-baron-750da1df-clip2.mp3')" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+[View on Suno](https://suno.com/song/cdf9d02d-3fff-444e-a7ff-f8d249b02ad7)
 :::
 
 ## Style Prompt
@@ -218,6 +238,10 @@ Lyrics generated from chat messages by **orangessfat** in **#niller2005** channe
 
 ## Generations
 
+
+- **2026-02-15 00:03** (gen `750da1df`):
+  - [Clip 1](https://suno.com/song/4d6ca078-f028-401c-8b5d-7d78856947bd) | [beacon-baron-clip1-4d6ca078.mp3](../../downloads/beacon-baron-clip1-4d6ca078.mp3)
+  - [Clip 2](https://suno.com/song/cdf9d02d-3fff-444e-a7ff-f8d249b02ad7) | [beacon-baron-clip2-cdf9d02d.mp3](../../downloads/beacon-baron-clip2-cdf9d02d.mp3)
 - **2026-02-14 23:44** (gen `de7e15c4`):
   - [Clip 1](https://suno.com/song/cdeb27bf-f757-4663-b155-dfe7ac248239) | [beacon-baron-clip1-cdeb27bf.mp3](../../downloads/beacon-baron-clip1-cdeb27bf.mp3)
   - [Clip 2](https://suno.com/song/0f5f872e-a3d8-4e20-9be7-0db9d5fa41c7) | [beacon-baron-clip2-0f5f872e.mp3](../../downloads/beacon-baron-clip2-0f5f872e.mp3)
