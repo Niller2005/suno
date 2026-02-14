@@ -205,8 +205,9 @@ When asked to generate a song:
 After a successful generation, complete these steps to make the song playable on the site:
 
 1. **Copy MP3s to public audio directory**:
-   - Copy from `downloads/{song}-clip{N}-{id}.mp3` to `docs/public/audio/{song}-clip{N}.mp3` (clean names, no ID suffix)
-   - Example: `cp downloads/my-song-clip1-a1b2c3d4.mp3 docs/public/audio/my-song-clip1.mp3`
+   - Copy from `downloads/{song}-clip{N}-{id}.mp3` to `docs/public/audio/{song}-{genid}-clip{N}.mp3` (include generation ID for traceability)
+   - The `{genid}` is the first 8 characters of the generation ID (visible in the `## Generations` section)
+   - Example: `cp downloads/my-song-clip1-a1b2c3d4.mp3 docs/public/audio/my-song-772c971f-clip1.mp3`
 
 2. **Add audio player section to the song markdown** (after the Details table, before Style Prompt):
    ```markdown
@@ -219,7 +220,7 @@ After a successful generation, complete these steps to make the song playable on
    ### Clip 1
 
    <audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
-     <source :src="withBase('/audio/{song}-clip1.mp3')" type="audio/mpeg">
+     <source :src="withBase('/audio/{song}-{genid}-clip1.mp3')" type="audio/mpeg">
      Your browser does not support the audio element.
    </audio>
 

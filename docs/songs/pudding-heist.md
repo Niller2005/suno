@@ -29,7 +29,7 @@ import { withBase } from 'vitepress'
 ### Clip 1
 
 <audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
-  <source :src="withBase('/audio/pudding-heist-clip1.mp3')" type="audio/mpeg">
+  <source :src="withBase('/audio/pudding-heist-772c971f-clip1.mp3')" type="audio/mpeg">
   Your browser does not support the audio element.
 </audio>
 
@@ -38,7 +38,7 @@ import { withBase } from 'vitepress'
 ### Clip 2
 
 <audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
-  <source :src="withBase('/audio/pudding-heist-clip2.mp3')" type="audio/mpeg">
+  <source :src="withBase('/audio/pudding-heist-772c971f-clip2.mp3')" type="audio/mpeg">
   Your browser does not support the audio element.
 </audio>
 
