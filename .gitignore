@@ -3,4 +3,8 @@ suno-mcp
 .env
 *.har
 __pycache__/
+downloads/
+node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
 
