@@ -1,2 +1,6 @@
 
 suno-mcp
+.env
+*.har
+__pycache__/
+
