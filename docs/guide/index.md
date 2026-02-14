@@ -4,28 +4,30 @@ Welcome to the Suno Music Lab guide. This project is a workspace for creating AI
 
 ## How It Works
 
-1. **Write a song definition** as a markdown file in the `songs/` directory
+1. **Write a song definition** as a markdown file in the `docs/songs/` directory
 2. **Craft a style prompt** describing genre, BPM, mood, and instrumentation
 3. **Write lyrics** with Suno meta-tags for structure, energy, and vocal control
-4. **Generate** the track using Suno AI (via the web UI or MCP tools)
+4. **Generate** the track using Suno AI (via the web UI)
 5. **Iterate** -- generate multiple versions, pick the best, remaster and polish
 
 ## Project Structure
 
 ```
 suno/
-├── songs/           # Song definition markdown files
-├── downloads/       # Generated audio files
+├── docs/
+│   ├── songs/       # Song definition markdown files (also VitePress pages)
+│   ├── public/audio/ # MP3 files for audio players
+│   └── guide/       # Documentation pages
+├── downloads/       # Generated audio files (local copies)
 ├── generate.py      # Python script for batch generation
-├── docs/            # This documentation site
-└── suno-mcp/        # MCP server for IDE integration
+└── scripts/         # Utility scripts (download, etc.)
 ```
 
 ## Quick Start
 
 ### Writing Your First Song
 
-Create a new markdown file in `songs/` following the [Song Format](./song-format) specification:
+Create a new markdown file in `docs/songs/` following the [Song Format](./song-format) specification:
 
 ```markdown
 # My Song Title
@@ -66,7 +68,6 @@ Your lyrics here...
 You can generate tracks in two ways:
 
 - **Suno Web UI**: Copy the style prompt and lyrics into [suno.com/create](https://suno.com/create)
-- **MCP Tools**: Use the integrated MCP server for automated generation from your IDE
 
 ## Next Steps
 

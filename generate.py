@@ -2,13 +2,13 @@
 """
 Suno API Generation Script
 
-Reads song markdown files from /songs/ and submits them to the Suno API.
+Reads song markdown files from docs/songs/ and submits them to the Suno API.
 Auth token and config are read from .env file.
 
 Usage:
-    python generate.py songs/my-song.md
-    python generate.py songs/my-song.md --dry-run
-    python generate.py songs/my-song.md --duration 240
+    python generate.py docs/songs/my-song.md
+    python generate.py docs/songs/my-song.md --dry-run
+    python generate.py docs/songs/my-song.md --duration 240
 """
 
 import argparse

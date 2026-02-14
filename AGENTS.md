@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This repository is a workspace for creating songs with Suno AI. Songs are stored as markdown files in `/mnt/d/suno/songs/` using kebab-case filenames (e.g., `beyond-the-silence-of-the-stars.md`). Use the `suno-music-creator` skill for professional workflows.
+This repository is a workspace for creating songs with Suno AI. Songs are stored as markdown files in `docs/songs/` using kebab-case filenames (e.g., `beyond-the-silence-of-the-stars.md`). These files serve double duty: they're the source of truth for song definitions and also the pages for the VitePress documentation site. Use the `suno-music-creator` skill for professional workflows.
 
 ## Song Markdown Format
 
@@ -113,17 +113,6 @@ Rules:
 - Match mood tags to lyrical content
 - Repeat chorus structure identically for cohesion
 
-## MCP Tools (via suno-mcp server)
-
-| Tool | Purpose |
-|------|---------|
-| `suno_open_browser` | Launch Playwright browser to Suno AI |
-| `suno_login` | Authenticate with email/password |
-| `suno_generate_track` | Generate track with prompt, style, lyrics, duration |
-| `suno_download_track` | Download track by ID with optional stems |
-| `suno_get_status` | Check session status |
-| `suno_close_browser` | Clean up browser session |
-
 ## Generation Best Practices
 
 - Generate 3-4 versions per track, pick the best output
@@ -147,7 +136,7 @@ Rules:
 
 ## File Conventions
 
-- **Location**: `/mnt/d/suno/songs/`
+- **Location**: `docs/songs/`
 - **Filenames**: kebab-case, derived from song title (e.g., `dubi-dubi-doo.md`)
-- **Format**: Markdown with Details table, Style Prompt code block, Lyrics code block, Generation Tips list
-- **Downloads**: Track audio files go in `/mnt/d/suno/downloads/`
+- **Format**: Markdown with VitePress frontmatter, Details table, Style Prompt code block, Lyrics code block, Generation Tips list
+- **Downloads**: Track audio files go in `downloads/` and `docs/public/audio/` (for VitePress)
