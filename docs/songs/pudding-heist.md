@@ -20,6 +20,30 @@ mood: Chaotic, comedic, competitive, aggressive, unhinged
 | **Key features** | Amen break chops, happy hardcore stabs, electro swing brass samples, comedic vocal switches, dramatic key changes, battle rap call-and-response, chaotic finale |
 | **Source** | Generated from Semieza / Defekter #niller2005 chat culture |
 
+<script setup>
+import { withBase } from 'vitepress'
+</script>
+
+## Listen
+
+### Clip 1
+
+<audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+  <source :src="withBase('/audio/pudding-heist-clip1.mp3')" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+[View on Suno](https://suno.com/song/0fcca5ad-6744-4312-8b1d-376cca3c83fd)
+
+### Clip 2
+
+<audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+  <source :src="withBase('/audio/pudding-heist-clip2.mp3')" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+[View on Suno](https://suno.com/song/7b1725cc-892c-45d1-a5ea-5274ffcecf80)
+
 ## Style Prompt
 
 ```
