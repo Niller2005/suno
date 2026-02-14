@@ -42,6 +42,7 @@ export default defineConfig({
             { text: "Dubi Dubi Doo", link: "/songs/dubi-dubi-doo" },
             { text: "Fatman League", link: "/songs/fatman-league" },
             { text: "I Am Semieza", link: "/songs/i-am-semieza" },
+            { text: "Pudding Heist", link: "/songs/pudding-heist" },
             {
               text: "Signals in the Static Haze",
               link: "/songs/signals-in-the-static-haze",
