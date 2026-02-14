@@ -20,6 +20,30 @@ mood: Chaotic, psychedelic, aggressive, unhinged, dark euphoria
 | **Key features** | Squelchy acid bass, layered psytrance arpeggios, hard 4/4 kicks, glitch FX, tempo shifts, massive psychedelic buildups, Middle Eastern melodic hints, vocoder harmonies |
 | **Source** | Generated from wideNessie / #niller2005 Twitch chat culture |
 
+<script setup>
+import { withBase } from 'vitepress'
+</script>
+
+## Listen
+
+### Clip 1
+
+<audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+  <source :src="withBase('/audio/widenessie-gaming-psytrance-clip1.mp3')" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+[View on Suno](https://suno.com/song/8d9024f9-c898-4798-b601-ebf397119e61)
+
+### Clip 2
+
+<audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+  <source :src="withBase('/audio/widenessie-gaming-psytrance-clip2.mp3')" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+[View on Suno](https://suno.com/song/074ddac2-dcbb-4e3d-8b54-380b2edd8109)
+
 ## Style Prompt
 
 ```
