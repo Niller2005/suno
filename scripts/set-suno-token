@@ -1,0 +1,83 @@
+#!/bin/bash
+# set-suno-token
+# Updates SUNO_AUTH_TOKEN in .env from clipboard or first argument.
+#
+# Usage:
+#   scripts/set-suno-token               # reads token from macOS clipboard
+#   scripts/set-suno-token <token>       # reads token from argument
+
+set -e
+
+ENV_FILE="$(dirname "$0")/../.env"
+
+if [ -n "$1" ]; then
+    TOKEN="$1"
+elif [ -t 0 ]; then
+    # stdin is a terminal — read from clipboard
+    if ! command -v pbpaste &> /dev/null; then
+        echo "Error: pbpaste not found. Pass token as argument or pipe it in:"
+        echo "  scripts/set-suno-token <token>"
+        echo "  echo <token> | scripts/set-suno-token"
+        exit 1
+    fi
+    TOKEN=$(pbpaste | tr -d '[:space:]')
+else
+    # stdin is piped
+    TOKEN=$(cat | tr -d '[:space:]')
+fi
+
+if [ -z "$TOKEN" ]; then
+    echo "Error: No token provided and clipboard is empty."
+    echo "Copy your token from the browser first, then run:"
+    echo "  scripts/set-suno-token"
+    exit 1
+fi
+
+# Validate it looks like a JWT (three base64 segments separated by dots)
+if ! echo "$TOKEN" | grep -Eq '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'; then
+    echo "Warning: Token doesn't look like a standard JWT (expected xxxx.yyyy.zzzz)."
+    echo "If you're sure it's correct, force update with:"
+    echo "  scripts/set-suno-token '$TOKEN'"
+    exit 1
+fi
+
+# Ensure .env exists
+if [ ! -f "$ENV_FILE" ]; then
+    touch "$ENV_FILE"
+fi
+
+# Update or append SUNO_AUTH_TOKEN (use Python to avoid sed escaping issues)
+if grep -q '^SUNO_AUTH_TOKEN=' "$ENV_FILE"; then
+    python3 -c "
+import sys
+with open('$ENV_FILE', 'r') as f:
+    lines = f.readlines()
+with open('$ENV_FILE', 'w') as f:
+    for line in lines:
+        if line.startswith('SUNO_AUTH_TOKEN='):
+            f.write('SUNO_AUTH_TOKEN=$TOKEN\n')
+        else:
+            f.write(line)
+"
+else
+    echo "SUNO_AUTH_TOKEN=$TOKEN" >> "$ENV_FILE"
+fi
+
+# Decode expiry for user feedback
+PAYLOAD=$(echo "$TOKEN" | cut -d. -f2)
+# Add padding
+PADDED=$(echo "$PAYLOAD" | awk '{len=length($0); padding=(4-len%4)%4; printf "%s", $0; for(i=0;i<padding;i++) printf "="; print ""}')
+EXP=$(echo "$PADDED" | base64 -D 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('exp',0))" 2>/dev/null || echo "0")
+
+if [ "$EXP" -gt 0 ]; then
+    NOW=$(date +%s)
+    REMAINING=$((EXP - NOW))
+    MINUTES=$((REMAINING / 60))
+    if [ "$REMAINING" -le 0 ]; then
+        echo "Token saved, but it already EXPIRED ${MINUTES#-} minutes ago."
+    else
+        echo "Token saved. Valid for ~${MINUTES} minutes (expires $(date -r "$EXP" '+%H:%M:%S'))."
+    fi
+else
+    echo "Token saved to .env"
+fi

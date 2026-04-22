@@ -1,0 +1,65 @@
+#!/bin/bash
+# set-suno-cookies
+# Updates SUNO_COOKIE in .env from clipboard or first argument.
+#
+# Usage:
+#   scripts/set-suno-cookies               # reads from macOS clipboard
+#   scripts/set-suno-cookies <cookies>     # reads from argument
+#   echo '<cookies>' | scripts/set-suno-cookies
+
+set -e
+
+ENV_FILE="$(dirname "$0")/../.env"
+
+if [ -n "$1" ]; then
+    COOKIES="$1"
+elif [ -t 0 ]; then
+    # stdin is a terminal — read from clipboard
+    if ! command -v pbpaste &> /dev/null; then
+        echo "Error: pbpaste not found. Pass cookies as argument or pipe them in:"
+        echo "  scripts/set-suno-cookies 'cookie1=val1; cookie2=val2'"
+        echo "  echo 'cookie1=val1' | scripts/set-suno-cookies"
+        exit 1
+    fi
+    COOKIES=$(pbpaste | tr -d '\n\r')
+else
+    # stdin is piped
+    COOKIES=$(cat | tr -d '\n\r')
+fi
+
+if [ -z "$COOKIES" ]; then
+    echo "Error: No cookies provided and clipboard is empty."
+    echo "Copy your cookies from the browser first, then run:"
+    echo "  scripts/set-suno-cookies"
+    exit 1
+fi
+
+# Ensure .env exists
+if [ ! -f "$ENV_FILE" ]; then
+    touch "$ENV_FILE"
+fi
+
+# Update or append SUNO_COOKIE (use Python to avoid sed escaping issues)
+if grep -q '^SUNO_COOKIE=' "$ENV_FILE"; then
+    python3 -c "
+import sys
+with open('$ENV_FILE', 'r') as f:
+    lines = f.readlines()
+with open('$ENV_FILE', 'w') as f:
+    for line in lines:
+        if line.startswith('SUNO_COOKIE='):
+            f.write('SUNO_COOKIE=$COOKIES\n')
+        else:
+            f.write(line)
+"
+else
+    echo "SUNO_COOKIE=$COOKIES" >> "$ENV_FILE"
+fi
+
+echo "Cookies saved to .env"
+echo ""
+echo "To verify they work, run:"
+echo "  python -c \"import generate; print(generate.get_auth_token()[1] and 'Cookie auth OK!' or 'Manual token')\""
+echo ""
+echo "Tip: These cookies usually last days or weeks. You'll only need to"
+echo "     update them if you log out of Suno in the browser."

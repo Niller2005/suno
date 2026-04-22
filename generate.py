@@ -5,6 +5,11 @@ Suno API Generation Script
 Reads song markdown files from docs/songs/ and submits them to the Suno API.
 Auth token and config are read from .env file.
 
+Supports two auth modes:
+  1. SUNO_COOKIE (recommended) — auto-refreshes the JWT from Clerk. Set once,
+     valid for days/weeks. Copy cookies from browser DevTools.
+  2. SUNO_AUTH_TOKEN (fallback) — manual JWT from browser. Expires hourly.
+
 Usage:
     python generate.py docs/songs/my-song.md
     python generate.py docs/songs/my-song.md --dry-run
@@ -20,6 +25,7 @@ import time
 import base64
 from datetime import datetime
 from pathlib import Path
+from typing import Optional, Dict
 
 try:
     import requests
@@ -47,6 +53,72 @@ def load_env():
                 os.environ.setdefault(key.strip(), value.strip())
 
 
+def get_fresh_token_from_cookie(cookie: str) -> str:
+    """Exchange Suno cookies for a fresh JWT via Clerk's API.
+
+    Suno uses Clerk for auth. The JWT expires hourly, but the cookies
+    last days/weeks. This calls Clerk's client endpoint to grab the
+    current valid JWT for the session.
+    """
+    url = "https://clerk.suno.com/v1/client?_clerk_js_version=4.72.2"
+    headers = {
+        "Cookie": cookie,
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+    }
+    resp = requests.get(url, headers=headers, timeout=30)
+    if resp.status_code != 200:
+        raise Exception(f"Clerk API returned {resp.status_code}: {resp.text[:300]}")
+    data = resp.json()
+    sessions = data.get("response", {}).get("sessions", [])
+    if not sessions:
+        raise Exception("No sessions found in Clerk response. Cookie may be invalid.")
+    jwt = sessions[0].get("last_active_token", {}).get("jwt")
+    if not jwt:
+        raise Exception("No JWT found in Clerk session. Cookie may be expired.")
+    return jwt
+
+
+def get_auth_token() -> tuple[str, bool]:
+    """Get the best available auth token.
+
+    Returns:
+        (token, is_auto_refreshed)
+        is_auto_refreshed is True when the token was just fetched from
+        Clerk using SUNO_COOKIE (never expires during this call).
+    """
+    cookie = os.environ.get("SUNO_COOKIE", "")
+    manual_token = os.environ.get("SUNO_AUTH_TOKEN", "")
+
+    if cookie:
+        try:
+            token = get_fresh_token_from_cookie(cookie)
+            return token, True
+        except Exception as e:
+            print(f"Cookie auth failed: {e}")
+            if manual_token:
+                print("Falling back to SUNO_AUTH_TOKEN")
+                return manual_token, False
+            raise
+
+    if manual_token:
+        return manual_token, False
+
+    print("ERROR: No authentication available.")
+    print("\nRecommended (auto-refresh, set once):")
+    print("  1. Open Suno in Chrome → DevTools → Network")
+    print("  2. Click anything, find a request to studio-api.prod.suno.com")
+    print("  3. Right-click → Copy → Copy as cURL (bash)")
+    print("  4. Extract the Cookie header and run:")
+    print("     scripts/set-suno-cookies 'cookie=value; ...'")
+    print("\nAlternative (manual, expires hourly):")
+    print("  1. Run DevTools snippet (scripts/suno-token-snippet.js)")
+    print("  2. Click anything on Suno to copy token")
+    print("  3. Run: scripts/set-suno-token")
+    sys.exit(1)
+
+
 def check_token_expiry(token: str) -> dict:
     """Decode JWT payload and check expiration."""
     try:
@@ -60,10 +132,13 @@ def check_token_expiry(token: str) -> dict:
         remaining = exp - now
         if remaining <= 0:
             print(f"WARNING: Token EXPIRED {abs(remaining) / 60:.0f} minutes ago!")
-            print("Refresh your token from browser DevTools and update .env")
+            print("\nQuick refresh:")
+            print("  Auto (recommended): scripts/set-suno-cookies 'your-cookies...'")
+            print("  Manual: scripts/set-suno-token")
             return {"expired": True, "payload": payload}
         elif remaining < 300:  # Less than 5 minutes
             print(f"WARNING: Token expires in {remaining:.0f} seconds!")
+            print("  Tip: switch to cookie auth with scripts/set-suno-cookies")
         else:
             print(f"Token valid for {remaining / 60:.0f} more minutes")
         return {"expired": False, "payload": payload}
@@ -116,7 +191,7 @@ def generate_browser_token() -> str:
     return json.dumps({"token": encoded})
 
 
-def download_clip(clip_id: str, song_slug: str, clip_num: int) -> str | None:
+def download_clip(clip_id: str, song_slug: str, clip_num: int) -> Optional[str]:
     """Download an mp3 from the Suno CDN. Returns the local file path or None."""
     cdn_url = f"https://cdn1.suno.ai/{clip_id}.mp3"
     downloads_dir = Path(__file__).parent / "downloads"
@@ -147,7 +222,7 @@ def append_generation_links(
     filepath: str,
     generation_id: str,
     clips: list[dict],
-    downloaded: dict[str, str] | None = None,
+    downloaded: Optional[Dict[str, str]] = None,
 ):
     """Append generation links to the song markdown file under ## Generations.
 
@@ -198,20 +273,22 @@ def append_generation_links(
 
 def submit_to_suno(song: dict, dry_run: bool = False) -> dict:
     """Submit a song to the Suno API."""
-    auth_token = os.environ.get("SUNO_AUTH_TOKEN", "")
+    auth_token, is_auto = get_auth_token()
     device_id = os.environ.get("SUNO_DEVICE_ID", "")
     model = os.environ.get("SUNO_MODEL", "chirp-crow")
     api_url = os.environ.get("SUNO_API_URL", "https://studio-api.prod.suno.com")
 
-    if not auth_token:
-        print("ERROR: SUNO_AUTH_TOKEN not set in .env")
-        sys.exit(1)
-
-    # Check token expiry
-    token_info = check_token_expiry(auth_token)
-    if token_info["expired"]:
-        print("Cannot proceed with expired token.")
-        sys.exit(1)
+    if is_auto:
+        print("Using auto-refreshed token from cookies")
+    else:
+        # Check token expiry for manual tokens
+        token_info = check_token_expiry(auth_token)
+        if token_info["expired"]:
+            print("Cannot proceed with expired token.")
+            print("\nTo refresh:")
+            print("  Auto: scripts/set-suno-cookies 'your-cookies...'")
+            print("  Manual: scripts/set-suno-token")
+            sys.exit(1)
 
     # Build request body
     body = {
@@ -274,18 +351,8 @@ def submit_to_suno(song: dict, dry_run: bool = False) -> dict:
 
 def poll_status(generation_id: str, clip_ids: list[str], timeout: int = 600):
     """Poll for generation completion."""
-    auth_token = os.environ.get("SUNO_AUTH_TOKEN", "")
     api_url = os.environ.get("SUNO_API_URL", "https://studio-api.prod.suno.com")
     device_id = os.environ.get("SUNO_DEVICE_ID", "")
-
-    headers = {
-        "Authorization": f"Bearer {auth_token}",
-        "Device-Id": device_id,
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0",
-        "Referer": "https://suno.com/",
-        "Origin": "https://suno.com",
-        "Accept": "*/*",
-    }
 
     # Poll using the feed endpoint
     ids_param = ",".join(clip_ids)
@@ -296,6 +363,16 @@ def poll_status(generation_id: str, clip_ids: list[str], timeout: int = 600):
 
     while time.time() - start < timeout:
         try:
+            # Refresh token before each poll (cheap if using cookies)
+            auth_token, _ = get_auth_token()
+            headers = {
+                "Authorization": f"Bearer {auth_token}",
+                "Device-Id": device_id,
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0",
+                "Referer": "https://suno.com/",
+                "Origin": "https://suno.com",
+                "Accept": "*/*",
+            }
             resp = requests.get(poll_url, headers=headers, timeout=30)
             if resp.status_code == 200:
                 clips = resp.json()
@@ -379,18 +456,20 @@ def check_status(filepath: str, no_download: bool = False, timeout: int = 60):
     for cid in clip_ids:
         print(f"  {cid}")
 
-    auth_token = os.environ.get("SUNO_AUTH_TOKEN", "")
+    auth_token, is_auto = get_auth_token()
     api_url = os.environ.get("SUNO_API_URL", "https://studio-api.prod.suno.com")
     device_id = os.environ.get("SUNO_DEVICE_ID", "")
 
-    if not auth_token:
-        print("ERROR: SUNO_AUTH_TOKEN not set in .env")
-        sys.exit(1)
-
-    token_info = check_token_expiry(auth_token)
-    if token_info["expired"]:
-        print("Cannot proceed with expired token.")
-        sys.exit(1)
+    if is_auto:
+        print("Using auto-refreshed token from cookies")
+    else:
+        token_info = check_token_expiry(auth_token)
+        if token_info["expired"]:
+            print("Cannot proceed with expired token.")
+            print("\nTo refresh:")
+            print("  Auto: scripts/set-suno-cookies 'your-cookies...'")
+            print("  Manual: scripts/set-suno-token")
+            sys.exit(1)
 
     headers = {
         "Authorization": f"Bearer {auth_token}",
