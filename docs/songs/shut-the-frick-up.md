@@ -20,6 +20,34 @@ mood: Aggressive, euphoric, comedic, chaotic
 | **Key features** | Liquid DnB rolling breaks, distorted hardstyle kicks, euphoric synth leads, Reese bass, pitched vocal chops, reverse bass, melodic piano breakdowns |
 | **Source** | #niller2005 chat culture — Semieza and Orangessfat memes |
 
+<script setup>
+import { withBase } from 'vitepress'
+</script>
+
+## Listen
+
+:::tabs
+== V1 — Liquid Drum and Bass x Hardstyle
+
+### Clip 1
+
+<audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+  <source :src="withBase('/audio/shut-the-frick-up-dee00c45-clip1.mp3')" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+[View on Suno](https://suno.com/song/d79db4c2-85be-45ed-9598-b4a0fdc6c802)
+
+### Clip 2
+
+<audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+  <source :src="withBase('/audio/shut-the-frick-up-dee00c45-clip2.mp3')" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+[View on Suno](https://suno.com/song/ee6d688a-d030-45d5-afb9-16115cf13860)
+:::
+
 ## Style Prompt
 
 ```
@@ -161,3 +189,9 @@ Peace at last...
 - If the hardstyle kicks aren't prominent enough, emphasize "distorted hardstyle kicks, reverse bass" in the style prompt
 - Use Extend with callback if too short: "continue with same liquid drum and bass hardstyle crossover energy and shut the frick up aggression"
 - Remaster (Subtle) after selecting best version for a polished mix
+
+## Generations
+
+- **2026-04-23 09:37** (gen `dee00c45`):
+  - [Clip 1](https://suno.com/song/d79db4c2-85be-45ed-9598-b4a0fdc6c802) | [shut-the-frick-up-clip1-d79db4c2.mp3](../../downloads/shut-the-frick-up-clip1-d79db4c2.mp3)
+  - [Clip 2](https://suno.com/song/ee6d688a-d030-45d5-afb9-16115cf13860) | [shut-the-frick-up-clip2-ee6d688a.mp3](../../downloads/shut-the-frick-up-clip2-ee6d688a.mp3)

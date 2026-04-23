@@ -294,7 +294,7 @@ def submit_to_suno(song: dict, dry_run: bool = False) -> dict:
     auth_token, is_auto = get_auth_token()
     device_id = os.environ.get("SUNO_DEVICE_ID", "")
     model = os.environ.get("SUNO_MODEL", "chirp-crow")
-    api_url = os.environ.get("SUNO_API_URL", "https://studio-api.prod.suno.com")
+    api_url = os.environ.get("SUNO_API_URL", "https://studio-api-prod.suno.com")
 
     if is_auto:
         print("Using auto-refreshed token from cookies")
@@ -308,7 +308,9 @@ def submit_to_suno(song: dict, dry_run: bool = False) -> dict:
             print("  Manual: scripts/set-suno-token")
             sys.exit(1)
 
-    # Build request body
+    import uuid
+
+    # Build request body matching browser request
     body = {
         "token": None,
         "generation_type": "TEXT",
@@ -317,18 +319,50 @@ def submit_to_suno(song: dict, dry_run: bool = False) -> dict:
         "negative_tags": song["negative_tags"],
         "mv": model,
         "prompt": song["prompt"],
+        "make_instrumental": False,
+        "user_uploaded_images_b64": None,
+        "metadata": {
+            "web_client_pathname": "/create",
+            "is_max_mode": False,
+            "is_mumble": False,
+            "create_mode": "custom",
+            "disable_volume_normalization": False,
+        },
+        "override_fields": [],
+        "cover_clip_id": None,
+        "cover_start_s": None,
+        "cover_end_s": None,
+        "persona_id": None,
+        "artist_clip_id": None,
+        "artist_start_s": None,
+        "artist_end_s": None,
+        "continue_clip_id": None,
+        "continued_aligned_prompt": None,
+        "continue_at": None,
+        "transaction_uuid": str(uuid.uuid4()),
     }
 
-    cookie = os.environ.get("SUNO_COOKIE", "")
+    # Generate browser-token with current timestamp
+    import base64
+    timestamp = int(time.time() * 1000)
+    browser_token_payload = json.dumps({"timestamp": timestamp})
+    browser_token = base64.urlsafe_b64encode(browser_token_payload.encode()).decode().rstrip("=")
+
     headers = {
         "Authorization": f"Bearer {auth_token}",
-        "Cookie": cookie,
+        "browser-token": json.dumps({"token": browser_token}),
         "Device-Id": device_id,
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
         "Referer": "https://suno.com/",
         "Origin": "https://suno.com",
         "Accept": "*/*",
+        "sec-ch-ua": '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"macOS"',
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
     }
 
     endpoint = f"{api_url}/api/generate/v2-web/"
@@ -370,7 +404,7 @@ def submit_to_suno(song: dict, dry_run: bool = False) -> dict:
 
 def poll_status(generation_id: str, clip_ids: list[str], timeout: int = 600):
     """Poll for generation completion."""
-    api_url = os.environ.get("SUNO_API_URL", "https://studio-api.prod.suno.com")
+    api_url = os.environ.get("SUNO_API_URL", "https://studio-api-prod.suno.com")
     device_id = os.environ.get("SUNO_DEVICE_ID", "")
     cookie = os.environ.get("SUNO_COOKIE", "")
 
@@ -478,7 +512,7 @@ def check_status(filepath: str, no_download: bool = False, timeout: int = 60):
         print(f"  {cid}")
 
     auth_token, is_auto = get_auth_token()
-    api_url = os.environ.get("SUNO_API_URL", "https://studio-api.prod.suno.com")
+    api_url = os.environ.get("SUNO_API_URL", "https://studio-api-prod.suno.com")
     device_id = os.environ.get("SUNO_DEVICE_ID", "")
 
     if is_auto:

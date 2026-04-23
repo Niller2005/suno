@@ -56,6 +56,10 @@ export default defineConfig({
             },
             { text: "Pudding Heist", link: "/songs/pudding-heist" },
             {
+              text: "Shut the Frick Up",
+              link: "/songs/shut-the-frick-up",
+            },
+            {
               text: "Signals in the Static Haze",
               link: "/songs/signals-in-the-static-haze",
             },
