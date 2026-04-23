@@ -53,6 +53,16 @@ def load_env():
                 os.environ.setdefault(key.strip(), value.strip())
 
 
+def extract_session_from_cookie(cookie: str) -> str:
+    """Extract the __session JWT directly from the cookie string."""
+    import re
+    sessions = re.findall(r"__session=([^;]+)", cookie)
+    if not sessions:
+        raise Exception("No __session cookie found.")
+    # Use the last session value (most recent if duplicates exist)
+    return sessions[-1]
+
+
 def get_fresh_token_from_cookie(cookie: str) -> str:
     """Exchange Suno cookies for a fresh JWT via Clerk's API.
 
@@ -92,11 +102,19 @@ def get_auth_token() -> tuple[str, bool]:
     manual_token = os.environ.get("SUNO_AUTH_TOKEN", "")
 
     if cookie:
+        # Try Clerk API first (auto-refresh)
         try:
             token = get_fresh_token_from_cookie(cookie)
             return token, True
         except Exception as e:
-            print(f"Cookie auth failed: {e}")
+            print(f"Clerk refresh failed: {e}")
+            # Fall back to extracting __session JWT directly from cookie
+            try:
+                token = extract_session_from_cookie(cookie)
+                print("Using __session JWT directly from cookie")
+                return token, False
+            except Exception as e2:
+                print(f"Direct session extraction failed: {e2}")
             if manual_token:
                 print("Falling back to SUNO_AUTH_TOKEN")
                 return manual_token, False
@@ -301,10 +319,11 @@ def submit_to_suno(song: dict, dry_run: bool = False) -> dict:
         "prompt": song["prompt"],
     }
 
+    cookie = os.environ.get("SUNO_COOKIE", "")
     headers = {
         "Authorization": f"Bearer {auth_token}",
+        "Cookie": cookie,
         "Device-Id": device_id,
-        "Browser-Token": generate_browser_token(),
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0",
         "Referer": "https://suno.com/",
@@ -353,6 +372,7 @@ def poll_status(generation_id: str, clip_ids: list[str], timeout: int = 600):
     """Poll for generation completion."""
     api_url = os.environ.get("SUNO_API_URL", "https://studio-api.prod.suno.com")
     device_id = os.environ.get("SUNO_DEVICE_ID", "")
+    cookie = os.environ.get("SUNO_COOKIE", "")
 
     # Poll using the feed endpoint
     ids_param = ",".join(clip_ids)
@@ -367,6 +387,7 @@ def poll_status(generation_id: str, clip_ids: list[str], timeout: int = 600):
             auth_token, _ = get_auth_token()
             headers = {
                 "Authorization": f"Bearer {auth_token}",
+                "Cookie": cookie,
                 "Device-Id": device_id,
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0",
                 "Referer": "https://suno.com/",
