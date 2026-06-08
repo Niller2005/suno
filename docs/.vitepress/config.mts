@@ -50,6 +50,7 @@ export default defineConfig({
             { text: "Dubi Dubi Doo", link: "/songs/dubi-dubi-doo" },
             { text: "Fatman League", link: "/songs/fatman-league" },
             { text: "I Am Semieza", link: "/songs/i-am-semieza" },
+            { text: "Kebab Drop", link: "/songs/kebab-drop" },
             {
               text: "Krimsonknite Feeding Flup",
               link: "/songs/krimsonknite-feeding-flup",

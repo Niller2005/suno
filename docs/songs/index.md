@@ -10,6 +10,7 @@ All songs created with Suno AI, organized with full details, style prompts, and 
 | [Dubi Dubi Doo](./dubi-dubi-doo) | Speed Garage | 136 | Cheeky, chaotic, high energy |
 | [Fatman League](./fatman-league) | Psytrance / Electro House | 142 | Chaotic, unhinged, high energy |
 | [I Am Semieza](./i-am-semieza) | Kawaii Hyperpop DnB | 174 | Chaotic, cute, unhinged, euphoric |
+| [Kebab Drop](./kebab-drop) | Drum and Bass | 174 | Playful, chaotic, hungry, euphoric, late-night |
 | [Krimsonknite Feeding Flup](./krimsonknite-feeding-flup) | Drum and Bass / Neurofunk | 174 | Chaotic, heavy, absurd, aggressive, comedic |
 | [Pudding Heist](./pudding-heist) | Breakcore x Happy Hardcore x Electro Swing | 170 | Chaotic, comedic, competitive, aggressive |
 | [Shut the Frick Up](./shut-the-frick-up) | Liquid Drum and Bass x Hardstyle | 160 | Aggressive, euphoric, comedic, chaotic |
