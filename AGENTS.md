@@ -150,16 +150,19 @@ The `generate.py` script reads song markdown files and submits them to the Suno 
 - Python 3.10+
 - `requests` library (`pip install requests`)
 - `python-dotenv` optional (`pip install python-dotenv`)
-- A `.env` file in the project root with:
+- A `.env` file in the project root (copy `.env.example`).
+
+Recommended auth (auto token refresh):
 
 ```
-SUNO_AUTH_TOKEN=<JWT from browser DevTools>
+SUNO_COOKIE=<full Cookie header from browser DevTools on a suno.com request>
+SUNO_SESSION_ID=<optional Clerk sess_ id for direct mint/keep-alive>
 SUNO_DEVICE_ID=<device ID from browser DevTools>
-SUNO_MODEL=chirp-crow
-SUNO_API_URL=https://studio-api.prod.suno.com
 ```
 
-To get the token: open Suno in browser, DevTools > Network > any API request > copy `Authorization: Bearer <token>`. Tokens expire -- the script warns when <5 minutes remain and errors on expired tokens.
+See `.env.example` and the top of `generate.py` for full details and the "Automatic token maintenance and keep-alive" support (modeled on https://github.com/SunoAI-API/Suno-API).
+
+SUNO_AUTH_TOKEN (manual JWT) is still supported as a fallback but expires hourly. The script warns when <5 minutes remain.
 
 ### Commands
 
@@ -179,11 +182,20 @@ python generate.py docs/songs/my-song.md --no-download
 # Custom poll timeout (default 600s)
 python generate.py docs/songs/my-song.md --poll-timeout 300
 
+# Use specific Suno model version (supports --version or --model; names like v5.5/v5/v4.5+ or keys like chirp-fenix)
+python generate.py docs/songs/my-song.md --version v5.5
+python generate.py docs/songs/my-song.md --model crow
+
 # Check status of the most recent generation (and download if complete)
 python generate.py docs/songs/my-song.md --status
 
 # Check status without downloading
 python generate.py docs/songs/my-song.md --status --no-download
+
+# Automatic token maintenance and keep-alive (no song file needed)
+# Run in a separate terminal/tmux to keep Clerk JWT/cookies warm (like Suno-API server)
+python generate.py --keep-alive
+python generate.py --keep-alive --keep-interval 10
 ```
 
 ### What It Does
