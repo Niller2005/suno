@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "suno-engineer": {
+      "source": "bitwize-music-studio/claude-ai-music-skills",
+      "sourceType": "github",
+      "skillPath": "skills/suno-engineer/SKILL.md",
+      "computedHash": "9d7e4176d9dcfc3f6ffdc0e9aac3e7e63bcf64cd1befbf44cf656778fcd219a4"
+    },
+    "suno-music-creator": {
+      "source": "schwepps/skills",
+      "sourceType": "github",
+      "skillPath": "suno-music-creator/SKILL.md",
+      "computedHash": "4b2c603c8641457f0d1adf803ba4b9544f0b531943a115c2d5288aa05921136b"
+    }
+  }
+}
