@@ -8,13 +8,20 @@ Auth token and config are read from .env file.
 Supports two auth modes:
   1. SUNO_COOKIE (recommended) — auto-refreshes the JWT from Clerk. Set once,
      valid for days/weeks. Copy cookies from browser DevTools.
+     Optionally also set SUNO_SESSION_ID (or SESSION_ID) to use direct
+     session token minting (the "Automatic token maintenance and keep-alive"
+     pattern from https://github.com/SunoAI-API/Suno-API).
   2. SUNO_AUTH_TOKEN (fallback) — manual JWT from browser. Expires hourly.
+
+Also supports proactive keep-alive mode:
+    python generate.py --keep-alive
+    python generate.py --keep-alive --keep-interval 10
 
 Usage:
     python generate.py docs/songs/my-song.md
     python generate.py docs/songs/my-song.md --dry-run
-    python generate.py docs/songs/my-song.md --duration 240
-"""
+    python generate.py docs/songs/my-song.md --version v5.5
+ """
 
 import argparse
 import json
@@ -63,31 +70,74 @@ def extract_session_from_cookie(cookie: str) -> str:
     return sessions[-1]
 
 
-def get_fresh_token_from_cookie(cookie: str) -> str:
-    """Exchange Suno cookies for a fresh JWT via Clerk's API.
+def extract_session_id_from_cookie(cookie: str) -> Optional[str]:
+    """Best-effort extraction of Clerk session id (sess_...) from cookie string."""
+    matches = re.findall(r"(?:__session|session|sess)[=:]?([A-Za-z0-9_.-]{10,})", cookie)
+    for m in matches:
+        if m.startswith("sess_"):
+            return m
+    return None
 
-    Suno uses Clerk for auth. The JWT expires hourly, but the cookies
-    last days/weeks. This calls Clerk's client endpoint to grab the
-    current valid JWT for the session.
+
+def get_fresh_token_from_cookie(cookie: str, session_id: Optional[str] = None) -> tuple[str, Optional[str]]:
+    """Exchange Suno cookies for a fresh JWT via Clerk (supports keep-alive style maintenance).
+
+    When session_id is provided (or discoverable), prefers the explicit token mint endpoint
+    POST /v1/client/sessions/{session_id}/tokens -- this is the mechanism behind
+    "Automatic token maintenance and keep-alive" in projects like SunoAI-API/Suno-API.
+    It also returns Set-Cookie headers which can extend/rotate the underlying cookies.
+
+    Falls back to the sessions list endpoint (GET /v1/client) which works with just COOKIE.
+
+    Returns:
+        (jwt, set_cookie_header_or_None)
     """
-    url = "https://clerk.suno.com/v1/client?_clerk_js_version=4.72.2"
     headers = {
         "Cookie": cookie,
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json",
     }
-    resp = requests.get(url, headers=headers, timeout=30)
-    if resp.status_code != 200:
-        raise Exception(f"Clerk API returned {resp.status_code}: {resp.text[:300]}")
-    data = resp.json()
-    sessions = data.get("response", {}).get("sessions", [])
-    if not sessions:
-        raise Exception("No sessions found in Clerk response. Cookie may be invalid.")
-    jwt = sessions[0].get("last_active_token", {}).get("jwt")
+    set_cookie = None
+    jwt = None
+
+    sid = session_id or extract_session_id_from_cookie(cookie)
+
+    if sid:
+        try:
+            url = f"https://clerk.suno.com/v1/client/sessions/{sid}/tokens?_clerk_js_version=4.72.0-snapshot.vc141245"
+            resp = requests.post(url, headers=headers, timeout=30)
+            if resp.status_code == 200:
+                jwt = resp.json().get("jwt")
+                set_cookie = resp.headers.get("Set-Cookie")
+                if set_cookie:
+                    print("  (Clerk keep-alive: received Set-Cookie update)")
+        except Exception as e:
+            print(f"  Session token mint failed, will fallback: {e}")
+
     if not jwt:
-        raise Exception("No JWT found in Clerk session. Cookie may be expired.")
-    return jwt
+        # Discovery / fallback via client sessions list
+        url = "https://clerk.suno.com/v1/client?_clerk_js_version=4.72.2"
+        resp = requests.get(url, headers=headers, timeout=30)
+        if resp.status_code != 200:
+            raise Exception(f"Clerk API returned {resp.status_code}: {resp.text[:300]}")
+        data = resp.json()
+        sessions = data.get("response", {}).get("sessions", [])
+        if not sessions:
+            raise Exception("No sessions found in Clerk response. Cookie may be invalid.")
+        sess = sessions[0]
+        jwt = sess.get("last_active_token", {}).get("jwt")
+        if not jwt:
+            raise Exception("No JWT found in Clerk session. Cookie may be expired.")
+        set_cookie = resp.headers.get("Set-Cookie")
+        # Log discovered sid so user can set SUNO_SESSION_ID for future explicit mints/keep-alive
+        discovered = sess.get("id")
+        if discovered and not session_id:
+            print(f"  (discovered session id {discovered}; set SUNO_SESSION_ID to use direct mint)")
+
+    if not jwt:
+        raise Exception("Failed to obtain JWT from Clerk.")
+    return jwt, set_cookie
 
 
 def get_auth_token() -> tuple[str, bool]:
@@ -99,12 +149,17 @@ def get_auth_token() -> tuple[str, bool]:
         Clerk using SUNO_COOKIE (never expires during this call).
     """
     cookie = os.environ.get("SUNO_COOKIE", "")
+    session_id = os.environ.get("SUNO_SESSION_ID", "") or os.environ.get("SESSION_ID", "")
     manual_token = os.environ.get("SUNO_AUTH_TOKEN", "")
 
     if cookie:
-        # Try Clerk API first (auto-refresh)
+        # Try Clerk API first (auto-refresh). Supports the /sessions/{id}/tokens keep-alive style.
         try:
-            token = get_fresh_token_from_cookie(cookie)
+            token, set_cookie = get_fresh_token_from_cookie(cookie, session_id or None)
+            if set_cookie:
+                # We intentionally do not auto-write .env here (would be surprising in CLI).
+                # User can re-run scripts/set-suno-cookies with an updated value if Clerk rotated cookies.
+                pass
             return token, True
         except Exception as e:
             print(f"Clerk refresh failed: {e}")
@@ -163,6 +218,109 @@ def check_token_expiry(token: str) -> dict:
     except Exception as e:
         print(f"Could not decode token: {e}")
         return {"expired": False, "payload": {}}
+
+
+def keep_alive_loop(interval_seconds: int = 5):
+    """Automatic token maintenance and keep-alive loop.
+
+    Replicates the spirit of SunoAI-API/Suno-API "Automatic token maintenance and keep-alive":
+    proactively mint fresh JWTs on a short interval using Clerk's session token endpoint
+    (when SUNO_SESSION_ID is available) or the client sessions endpoint.
+
+    This ensures a long-running process (or dedicated maintenance daemon) never sees
+    an expired token. It also exercises the Clerk endpoints which can help maintain
+    cookie/session lifetime.
+
+    Start with:
+        python generate.py --keep-alive
+        # or with custom interval
+        python generate.py --keep-alive --poll-timeout 5   # reuse flag for interval (hack)
+    """
+    load_env()
+    cookie = os.environ.get("SUNO_COOKIE", "")
+    session_id = (
+        os.environ.get("SUNO_SESSION_ID", "")
+        or os.environ.get("SESSION_ID", "")
+        or extract_session_id_from_cookie(cookie)
+    )
+    if not cookie:
+        print("ERROR: SUNO_COOKIE (or SESSION_ID + COOKIE) required for --keep-alive")
+        sys.exit(1)
+
+    print("🔄 Starting automatic token keep-alive (from Suno-API pattern). Press Ctrl-C to stop.")
+    print(f"   Interval: {interval_seconds}s | session_id: {'yes' if session_id else 'no (using fallback)'}")
+    print("   This keeps JWTs fresh without needing manual SUNO_AUTH_TOKEN refreshes.")
+
+    while True:
+        try:
+            token, set_cookie = get_fresh_token_from_cookie(cookie, session_id)
+            # Use latest cookie for subsequent iterations if Clerk rotated any
+            if set_cookie:
+                # set_cookie is typically a delta like "name=val; Path=..."; for loop we can
+                # append/override into our cookie string heuristically (simple strategy)
+                # For full correctness a real cookie jar would be used; here we just log.
+                print("   ✓ JWT refreshed + Clerk Set-Cookie received (session kept warm)")
+            else:
+                print("   ✓ JWT refreshed")
+            # Light validation (no noisy print)
+            try:
+                payload_b64 = token.split(".")[1]
+                payload_b64 += "=" * (4 - len(payload_b64) % 4)
+                payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+                exp = payload.get("exp", 0)
+                remaining_min = max(0, int((exp - time.time()) / 60))
+                print(f"     token valid ~{remaining_min} min")
+            except Exception:
+                pass
+        except Exception as e:
+            print(f"   ✗ Keep-alive error: {e}")
+        time.sleep(interval_seconds)
+
+
+# Suno model versions (from /api/generate/v2-web/models or similar)
+# name -> external_key for the "mv" field
+MODEL_VERSIONS = {
+    "v5.5": "chirp-fenix",
+    "v5": "chirp-crow",
+    "v4.5+": "chirp-bluejay",
+    "v4.5": "chirp-auk",
+    "v4.5-all": "chirp-auk-turbo",
+    "v4": "chirp-v4",
+    "v3.5": "chirp-v3-5",
+    "v3": "chirp-v3-0",
+    "v2": "chirp-v2-xxl-alpha",
+}
+
+
+def resolve_model_version(version: Optional[str]) -> str:
+    """Resolve a friendly model version name (v5.5, v5, ...) or external key to the mv value."""
+    if not version:
+        return os.environ.get("SUNO_MODEL", "chirp-crow")
+    v = version.strip().lower().lstrip("v")
+    # direct key passthrough
+    if version.strip().lower().startswith("chirp-"):
+        return version.strip()
+    # aliases (allow "5.5", "5", "fenix", "4.5+", etc.)
+    aliases = {
+        "5.5": "chirp-fenix",
+        "fenix": "chirp-fenix",
+        "5": "chirp-crow",
+        "crow": "chirp-crow",
+        "4.5+": "chirp-bluejay",
+        "bluejay": "chirp-bluejay",
+        "4.5": "chirp-auk",
+        "auk": "chirp-auk",
+        "4.5-all": "chirp-auk-turbo",
+        "auk-turbo": "chirp-auk-turbo",
+        "4": "chirp-v4",
+        "3.5": "chirp-v3-5",
+        "3": "chirp-v3-0",
+        "2": "chirp-v2-xxl-alpha",
+    }
+    if v in aliases:
+        return aliases[v]
+    # unknown: pass through (API may reject or accept)
+    return version.strip()
 
 
 def parse_song_md(filepath: str) -> dict:
@@ -289,11 +447,11 @@ def append_generation_links(
         print(f"  Clip {i + 1}: https://suno.com/song/{clip_id}{extra}")
 
 
-def submit_to_suno(song: dict, dry_run: bool = False) -> dict:
+def submit_to_suno(song: dict, dry_run: bool = False, model_version: Optional[str] = None) -> dict:
     """Submit a song to the Suno API."""
     auth_token, is_auto = get_auth_token()
     device_id = os.environ.get("SUNO_DEVICE_ID", "")
-    model = os.environ.get("SUNO_MODEL", "chirp-crow")
+    model = resolve_model_version(model_version) if model_version else os.environ.get("SUNO_MODEL", "chirp-crow")
     api_url = os.environ.get("SUNO_API_URL", "https://studio-api-prod.suno.com")
 
     if is_auto:
@@ -617,9 +775,14 @@ def check_status(filepath: str, no_download: bool = False, timeout: int = 60):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate Suno tracks from song markdown files"
+        description="Generate Suno tracks from song markdown files. Also supports --keep-alive for automatic token maintenance (inspired by SunoAI-API/Suno-API)."
     )
-    parser.add_argument("song_file", help="Path to song .md file")
+    parser.add_argument(
+        "song_file",
+        nargs="?",
+        default=None,
+        help="Path to song .md file (not needed for --keep-alive or --status on a prior gen)",
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -644,13 +807,38 @@ def main():
         default=600,
         help="Polling timeout in seconds (default: 600)",
     )
+    parser.add_argument(
+        "--keep-alive",
+        action="store_true",
+        help="Run automatic token maintenance and keep-alive loop (no song needed). Implements proactive Clerk JWT refresh like Suno-API.",
+    )
+    parser.add_argument(
+        "--keep-interval",
+        type=int,
+        default=5,
+        help="Refresh interval seconds for --keep-alive (default: 5, matching server-style keep-alive)",
+    )
+    parser.add_argument(
+        "--version",
+        "--model",
+        dest="model_version",
+        default=None,
+        help="Suno model version (e.g. v5.5, v5, v4.5+, v4.5, chirp-fenix, crow). Overrides SUNO_MODEL. Default: v5 (chirp-crow)",
+    )
     args = parser.parse_args()
+
+    load_env()
+
+    if args.keep_alive:
+        keep_alive_loop(interval_seconds=args.keep_interval)
+        return
+
+    if not args.song_file:
+        parser.error("song_file is required (unless using --keep-alive)")
 
     if not Path(args.song_file).exists():
         print(f"ERROR: File not found: {args.song_file}")
         sys.exit(1)
-
-    load_env()
 
     # Status check mode -- query existing generation, don't submit new one
     if args.status:
@@ -664,7 +852,7 @@ def main():
     print(f"  Tags length: {len(song['tags'])} chars")
     print(f"  Lyrics length: {len(song['prompt'])} chars")
 
-    result = submit_to_suno(song, dry_run=args.dry_run)
+    result = submit_to_suno(song, dry_run=args.dry_run, model_version=args.model_version)
 
     if not args.dry_run and "id" in result:
         clips = result.get("clips", [])
