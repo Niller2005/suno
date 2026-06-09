@@ -8,4 +8,9 @@ downloads/
 node_modules/
 docs/.vitepress/dist/
 docs/.vitepress/cache/
+site/.svelte-kit/
+site/.vercel/
+site/build/
 
+.omo/
+bun.lock

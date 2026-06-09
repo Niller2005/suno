@@ -1,5 +1,5 @@
 {
-  "buildCommand": "vitepress build docs",
-  "outputDirectory": "docs/.vitepress/dist",
-  "framework": "vitepress"
+  "buildCommand": "cd site && bun run build",
+  "outputDirectory": "site/.vercel/output",
+  "framework": null
 }
