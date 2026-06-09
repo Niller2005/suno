@@ -4,7 +4,7 @@ import { tabsMarkdownPlugin } from "vitepress-plugin-tabs";
 export default defineConfig({
   title: "Suno Music Lab",
   description: "AI-powered music creation with Suno",
-  base: "/suno/",
+  base: process.env.VERCEL ? "/" : "/suno/",
 
   markdown: {
     config(md) {
