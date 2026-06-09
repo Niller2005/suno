@@ -12,6 +12,7 @@ All songs created with Suno AI, organized with full details, style prompts, and 
 | [I Am Semieza](./i-am-semieza) | Kawaii Hyperpop DnB | 174 | Chaotic, cute, unhinged, euphoric |
 | [Kebab Drop](./kebab-drop) | Drum and Bass | 174 | Playful, chaotic, hungry, euphoric, late-night |
 | [Krimsonknite Feeding Flup](./krimsonknite-feeding-flup) | Drum and Bass / Neurofunk | 174 | Chaotic, heavy, absurd, aggressive, comedic |
+| [Not That Fast Flup](./not-that-fast-flup) | Euphoric Hardstyle (Brennan Heart style) | 150 | Euphoric, playful, energetic, cheeky |
 | [Pudding Heist](./pudding-heist) | Breakcore x Happy Hardcore x Electro Swing | 170 | Chaotic, comedic, competitive, aggressive |
 | [Shut the Frick Up](./shut-the-frick-up) | Liquid Drum and Bass x Hardstyle | 160 | Aggressive, euphoric, comedic, chaotic |
 | [Signals in the Static Haze](./signals-in-the-static-haze) | Stutter House | 126 | Dark, hypnotic, groovy |

@@ -51,11 +51,12 @@ export default defineConfig({
             { text: "Fatman League", link: "/songs/fatman-league" },
             { text: "I Am Semieza", link: "/songs/i-am-semieza" },
             { text: "Kebab Drop", link: "/songs/kebab-drop" },
-            {
-              text: "Krimsonknite Feeding Flup",
-              link: "/songs/krimsonknite-feeding-flup",
-            },
-            { text: "Pudding Heist", link: "/songs/pudding-heist" },
+              {
+                text: "Krimsonknite Feeding Flup",
+                link: "/songs/krimsonknite-feeding-flup",
+              },
+              { text: "Not That Fast Flup", link: "/songs/not-that-fast-flup" },
+              { text: "Pudding Heist", link: "/songs/pudding-heist" },
             {
               text: "Shut the Frick Up",
               link: "/songs/shut-the-frick-up",
