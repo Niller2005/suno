@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd site && bun run build",
+  "buildCommand": "cd site && bun install --frozen-lockfile && bun run build",
   "outputDirectory": "site/.vercel/output",
   "framework": null
 }
