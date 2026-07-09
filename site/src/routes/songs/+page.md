@@ -10,6 +10,7 @@ All songs created with Suno AI, organized with full details, style prompts, and 
 |------|-------|-----|------|
 | [Beacon Baron](/songs/beacon-baron) | Trap / Grime | 140 | Aggressive, braggadocious, chaotic |
 | [Beyond the Silence of the Stars](/songs/beyond-the-silence-of-the-stars) | Euphoric Hardstyle | 150 | Epic, dramatic, triumphant |
+| [Defeat Pump](/songs/defeat-pump) | Electro Swing / Drum & Bass / UK Garage | 155 | Aggressive, comedic, dark cabaret, high-energy rave |
 | [Drifting Past the Edge of Light](/songs/drifting-past-the-edge-of-light) | Liquid Drum and Bass | 174 | Smooth, dreamy, uplifting |
 | [Dubi Dubi Doo](/songs/dubi-dubi-doo) | Speed Garage | 136 | Cheeky, chaotic, high energy |
 | [Fatman League](/songs/fatman-league) | Psytrance / Electro House | 142 | Chaotic, unhinged, high energy |
