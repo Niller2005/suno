@@ -1,8 +1,8 @@
 ---
 title: Defeat Pump
-genre: Electroswing / Rap / Cyberpunk
-bpm: 128
-mood: Aggressive, comedic, dark cabaret, dystopian
+genre: Electro Swing / Drum & Bass / UK Garage
+bpm: 155
+mood: Aggressive, comedic, dark cabaret, high-energy rave
 ---
 
 # Defeat Pump
@@ -11,18 +11,66 @@ mood: Aggressive, comedic, dark cabaret, dystopian
 
 | Parameter | Value |
 |-----------|-------|
-| **Genre** | Electroswing / Rap / Cyberpunk |
-| **BPM** | 128 |
-| **Mood** | Aggressive, comedic, dark cabaret, dystopian |
+| **Genre** | Electro Swing / Drum & Bass / UK Garage |
+| **BPM** | 155 |
+| **Mood** | Aggressive, comedic, dark cabaret, high-energy rave |
 | **Theme** | Summer heat / broken heat pump / incompetent technician / gaming rage / cyberpunk meltdown |
 | **Vocals** | Male rapper, aggressive comedic delivery, rapid-fire flow, shouted ad-libs, spoken word interludes |
 | **Duration** | ~4-5 min |
-| **Key features** | Swing rhythm brass stabs, heavy 808 bass, dark cabaret synths, glitch FX, scratch effects, electroswing beat, dystopian synth pads, call-and-response chorus, sampled political rants |
+| **Key features** | Amen breakbeat, 2-step UKG shuffle, swing rhythm brass stabs, sub-bass, jump-up bassline, dark cabaret synths, glitch FX, festival production |
+
+<script setup>
+import { withBase } from 'vitepress'
+</script>
+
+## Listen
+
+:::tabs
+== V1 — Electroswing / Rap / Cyberpunk
+
+### Clip 1
+
+<audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+  <source :src="withBase('/audio/defeat-pump-bcc8593c-clip1.mp3')" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+[View on Suno](https://suno.com/song/91c11184-a1d8-4d65-a95d-7242abdfb82a)
+
+### Clip 2
+
+<audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+  <source :src="withBase('/audio/defeat-pump-bcc8593c-clip2.mp3')" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+[View on Suno](https://suno.com/song/b774d445-3dfc-441a-8e5e-a25cca6da7b1)
+
+== V2 — Electro Swing / DnB / UKG
+
+### Clip 1
+
+<audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+  <source :src="withBase('/audio/defeat-pump-c8fc9224-clip1.mp3')" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+[View on Suno](https://suno.com/song/c0b2d5fe-39e6-43a9-aee7-1703aa4fa9fa)
+
+### Clip 2
+
+<audio controls preload="metadata" style="width: 100%; margin-bottom: 1rem;">
+  <source :src="withBase('/audio/defeat-pump-c8fc9224-clip2.mp3')" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+[View on Suno](https://suno.com/song/3d80e337-ce9a-4126-badb-7c021a1fc05d)
+:::
 
 ## Style Prompt
 
 ```
-Male rapper, aggressive comedic delivery, rapid-fire flow, spoken word interludes. Electro swing with hip-hop and cyberpunk elements, 128 BPM, energetic, swing rhythm, brass stabs, heavy 808 bass, dark cabaret synths, glitch FX, dystopian atmosphere, festival production, no guitar, no acoustic instruments, no ballad
+Male rapper, aggressive comedic delivery, rapid-fire flow, shouted ad-libs, spoken word interludes. Electro swing drum and bass with UK garage influences, 155 BPM, energetic, amen breakbeat, 2-step shuffle, swing rhythm, brass stabs, sub-bass, dark cabaret synths, glitch FX, festival production, no guitar, no acoustic instruments, no ballad
 ```
 
 ## Lyrics
@@ -129,14 +177,14 @@ Mhm...
 
 ## Generation Tips
 
-- Generate 3-4 versions and pick the one with the tightest swing rhythm and hardest brass stabs
-- The rap verses should feel aggressive and conversational — if too melodic, try a Cover with a rap persona
-- The "trump trump" in the chorus should land as a sharp political sample stab — if missing, try Replace Section
-- The bridge needs a dark cabaret/cyberpunk atmosphere with the sad brass and piano — if too clean, regenerate
-- Use Extend with callback if too short: "continue with same electroswing rap energy and dystopian brass vibe"
+- Generate 3-4 versions and pick the one with the tightest DnB breakbeat and hardest UKG shuffle
+- The rap at 155 BPM needs rapid-fire delivery — if Suno slows it down, try adding "fast rapping" to the style prompt
+- The "trump trump" in the chorus should hit as a sharp stutter over the 2-step beat
+- Listen for sub-bass presence — DnB/UKG rely on heavy sub for impact
+- Use Extend with callback if too short: "continue with the same electro swing DnB energy and brass stabs"
 - Remaster (Subtle) after selecting best version
-- Watch for syllable count on the longer rap lines — if Suno clips them, try a Cover with tighter delivery
-- The outro fade should have echoing delay on the spoken words — if missing, try Replace Section
+- Watch for vocal clarity at high BPM — if garbled, regenerate with "clear vocals" emphasis
+- The bridge should drop to halftime feel before the final chorus erupts
 
 ## Lyrics Changes Log
 
@@ -150,9 +198,14 @@ Complete rewrite from original chat rant into structured song:
 - Kept all explicit language, rage, and comedic voice intact
 - Added swing-appropriate instrumental break between choruses
 - Bridge now builds from dark/melancholic to rising energy for maximum final chorus impact
+- **V2 (2026-07-09)**: Reimagined as electro swing / drum & bass / UK garage fusion at 155 BPM with amen breakbeats, 2-step shuffle, and jump-up bassline
 
 ## Generations
 
+
+- **2026-07-09 11:33** (gen `c8fc9224`):
+  - [Clip 1](https://suno.com/song/c0b2d5fe-39e6-43a9-aee7-1703aa4fa9fa) | [defeat-pump-clip1-c0b2d5fe.mp3](../../downloads/defeat-pump-clip1-c0b2d5fe.mp3)
+  - [Clip 2](https://suno.com/song/3d80e337-ce9a-4126-badb-7c021a1fc05d) | [defeat-pump-clip2-3d80e337.mp3](../../downloads/defeat-pump-clip2-3d80e337.mp3)
 - **2026-07-09 11:19** (gen `bcc8593c`):
   - [Clip 1](https://suno.com/song/91c11184-a1d8-4d65-a95d-7242abdfb82a) | [defeat-pump-clip1-91c11184.mp3](../../downloads/defeat-pump-clip1-91c11184.mp3)
   - [Clip 2](https://suno.com/song/b774d445-3dfc-441a-8e5e-a25cca6da7b1) | [defeat-pump-clip2-b774d445.mp3](../../downloads/defeat-pump-clip2-b774d445.mp3)
