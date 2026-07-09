@@ -7,6 +7,7 @@ All songs created with Suno AI, organized with full details, style prompts, and 
 | [Beacon Baron](./beacon-baron) | Trap / Grime | 140 | Aggressive, braggadocious, chaotic |
 | [Beyond the Silence of the Stars](./beyond-the-silence-of-the-stars) | Euphoric Hardstyle | 150 | Epic, dramatic, triumphant |
 | [Drifting Past the Edge of Light](./drifting-past-the-edge-of-light) | Liquid Drum and Bass | 174 | Smooth, dreamy, uplifting |
+| [Defeat Pump](./defeat-pump) | Electroswing / Rap / Cyberpunk | 128 | Aggressive, comedic, dark cabaret |
 | [Dubi Dubi Doo](./dubi-dubi-doo) | Speed Garage | 136 | Cheeky, chaotic, high energy |
 | [Fatman League](./fatman-league) | Psytrance / Electro House | 142 | Chaotic, unhinged, high energy |
 | [I Am Semieza](./i-am-semieza) | Kawaii Hyperpop DnB | 174 | Chaotic, cute, unhinged, euphoric |
